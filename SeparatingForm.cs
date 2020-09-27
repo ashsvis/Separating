@@ -1059,11 +1059,9 @@ namespace Separating
                 // допобработка
                 foreach (var categoryNode in tvResults.Nodes.Cast<TreeNode>())
                 {
-                    //Console.WriteLine("//" + categoryNode.Text);
                     foreach (var groupNode in categoryNode.Nodes.Cast<TreeNode>())
                     {
                         if (groupNode.Nodes.Count == 0) continue;
-                        //Console.WriteLine("      " + groupNode.Text);
                         var founddiff = false;
                         while (true)
                         {
@@ -1075,16 +1073,14 @@ namespace Separating
                                     founddiff = true;
                                     break;
                                 }
-                                //Console.WriteLine("            " + itemNode.Text);
                             }
                             if (founddiff)
                                 break;
                             groupNode.Text += @" " + firstword;
                             foreach (var itemNode in groupNode.Nodes.Cast<TreeNode>())
                             {
-                                //var aitems = itemNode.Text.Split(new[] {' '});
-                                itemNode.Text = itemNode.Text.Substring(firstword.Length + 1);
-                                    //String.Join(" ", aitems, 1, aitems.Length);
+                                if (firstword.Length + 1 < itemNode.Text.Length)
+                                    itemNode.Text = itemNode.Text.Substring(firstword.Length + 1);
                             }
                         }
                     }
