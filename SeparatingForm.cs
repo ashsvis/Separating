@@ -1147,13 +1147,13 @@ namespace Separating
                     "D13","D14","D15","D16","D17",
                     "G13","G14","G15","G16","G17",
                     "K13","K14","K15","K16","K17",
-                    "N13","N14","N15","N16","N17",
-                    "R13","R14","R15","R16","R17",
-                    "V13","V14","V15","V16","V17",
-                    "Z13","Z14","Z15","Z16","Z17",
-                    "AD13","AD14","AD15","AD16","AD17",
-                    "AH13","AH14","AH15","AH16","AH17",
-                    "AL13","AL14"
+                    "O13","O14","O15","O16","O17",
+                    "S13","S14","S15","S16","S17",
+                    "W13","W14","W15","W16","W17",
+                    "AA13","AA14","AA15","AA16","AA17",
+                    "AE13","AE14","AE15","AE16","AE17",
+                    "AI13","AI14","AI15","AI16","AI17",
+                    "AM13","AM14"
                 };
                 var dict = new Dictionary<string, int>();
                 var n = 0;
@@ -1166,6 +1166,7 @@ namespace Separating
                     var ncol = AbcToIndex(colName);
                     var nrow = int.Parse(rowName);
                     sheet.Cells[nrow, ncol] = document.Key;
+                    sheet.Cells[19, ncolStart] = document.Key;
                     dict.Add(document.Key, ncolStart);
                     ncolStart++;
                     n++;
@@ -1332,10 +1333,10 @@ namespace Separating
                         sheet.Cells[row, AbcToIndex("F")] = eu;
                         if (dict.ContainsKey(document))
                             sheet.Cells[row, dict[document]] = allNumbers.ToString(CultureInfo.GetCultureInfo("en-US"));
-                        sheet.Cells[row, AbcToIndex("AB")] = custNumbers > 0
+                        sheet.Cells[row, AbcToIndex("BG")] = custNumbers > 0
                                                                  ? custNumbers.ToString(CultureInfo.GetCultureInfo("en-US"))
                                                                  : "";
-                        sheet.Cells[row, AbcToIndex("AC")] = workNumbers > 0
+                        sheet.Cells[row, AbcToIndex("BH")] = workNumbers > 0
                                                                  ? workNumbers.ToString(CultureInfo.GetCultureInfo("en-US"))
                                                                  : "";
                     }
