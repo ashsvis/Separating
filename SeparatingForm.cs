@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 using System.Windows.Forms;
 
 namespace Separating
@@ -407,9 +408,16 @@ namespace Separating
                         try
                         {
                             var sheet1 = wb1.Sheets[1];
+
+                            var xlCellTypeLastCell = 11;
+                            var lastCell = sheet1.Cells.SpecialCells(xlCellTypeLastCell);
+                            var lastCellRow = lastCell.Row;
+                            var colName = IndexToAbc(lastCell.Column);
+                            var arrData = (object[,])sheet1.Range[$"A1:{colName}{lastCell.Row}"].Value;
+
                             var baseNames = "";
                             var fileName = Path.GetFileName(filename);
-                            if (fileName != null && Char.IsDigit(fileName[0]))
+                            if (fileName != null && char.IsDigit(fileName[0]))
                             {
                                 // обработка файлов со спецификациями
                                 baseNames = Path.GetFileNameWithoutExtension(fileName);
@@ -419,29 +427,29 @@ namespace Separating
                                 var shortitem = "";
                                 while (true)
                                 {
-                                    string col1 = sheet1.Range["A" + row].Text.Trim();
+                                    string col1 = $"{arrData[row, 1]}"; //sheet1.Range["A" + row].Text.Trim();
                                     var customer = col1.IndexOf('*') >= 0;
-                                    string colB = Normalize(sheet1.Range["B" + row].Text.Trim()); // наименование
+                                    string colB = Normalize($"{arrData[row, 2]}"); // наименование, sheet1.Range["B" + row].Text.Trim()
                                     if (knownCategories.Contains(colB))
                                         category = colB;
                                     var isKnownExtractName = knownExtractNames.Any(colB.StartsWith);
-                                    string colC = sheet1.Range["C" + row].Text.Trim(); // тип, марка
-                                    string colF = sheet1.Range["F" + row].Text.Trim(); // ед. изм.
-                                    string colG = sheet1.Range["G" + row].Text.Trim(); // кол-во
-                                    if (!String.IsNullOrWhiteSpace(colB) &&
-                                        (Char.IsUpper(colB[0]) || Char.IsDigit(colB[0])) &&
+                                    string colC = $"{arrData[row, 3]}"; //sheet1.Range["C" + row].Text.Trim(); // тип, марка
+                                    string colF = $"{arrData[row, 6]}"; //sheet1.Range["F" + row].Text.Trim(); // ед. изм.
+                                    string colG = $"{arrData[row, 7]}"; //sheet1.Range["G" + row].Text.Trim(); // кол-во
+                                    if (!string.IsNullOrWhiteSpace(colB) &&
+                                        (char.IsUpper(colB[0]) || char.IsDigit(colB[0])) &&
                                         !knownCategories.Contains(colB) &&
-                                        !String.IsNullOrWhiteSpace(colC) && !isKnownExtractName &&
-                                        String.IsNullOrWhiteSpace(colF) && String.IsNullOrWhiteSpace(colG))
+                                        !string.IsNullOrWhiteSpace(colC) && !isKnownExtractName &&
+                                        string.IsNullOrWhiteSpace(colF) && string.IsNullOrWhiteSpace(colG))
                                     {
                                         subcat = colB;
                                         shortitem = colC;
                                     }
-                                    if (!String.IsNullOrWhiteSpace(colB) &&
-                                        (Char.IsUpper(colB[0]) || Char.IsDigit(colB[0])) &&
+                                    if (!string.IsNullOrWhiteSpace(colB) &&
+                                        (char.IsUpper(colB[0]) || char.IsDigit(colB[0])) &&
                                         !knownCategories.Contains(colB) &&
-                                        !isKnownExtractName && !String.IsNullOrWhiteSpace(colF) &&
-                                        !String.IsNullOrWhiteSpace(colG))
+                                        !isKnownExtractName && !string.IsNullOrWhiteSpace(colF) &&
+                                        !string.IsNullOrWhiteSpace(colG))
                                     {
                                         if (!String.IsNullOrWhiteSpace(colC)) shortitem = colC;
                                         var desc = (subcat + " " + colB + " " + shortitem).Trim();
@@ -503,7 +511,7 @@ namespace Separating
 
                                     }
                                     row++;
-                                    if (row > 500) break;
+                                    if (row > lastCellRow) break;
                                 }
                             }
                             else
@@ -512,7 +520,7 @@ namespace Separating
                                 var row = 1;
                                 while (true)
                                 {
-                                    string rawBaseNames = sheet1.Range[String.Format("D{0}", row)].Text.Trim();
+                                    string rawBaseNames = $"{arrData[row, 4]}"; //sheet1.Range[String.Format("D{0}", row)].Text.Trim();
                                     if (rawBaseNames.Trim().StartsWith("Основание:"))
                                     {
                                         var a1 = rawBaseNames.Split(new[] {"Основание:"},
@@ -524,9 +532,9 @@ namespace Separating
                                         }
                                     }
                                     row++;
-                                    if (row > 5000) break;
+                                    if (row > lastCellRow) break;
                                 }
-                                if (!String.IsNullOrWhiteSpace(baseNames))
+                                if (!string.IsNullOrWhiteSpace(baseNames))
                                 {
                                     SelectGoods("Материалы", baseNames, sheet1, row, fileName);
                                     SelectGoods("Оборудование", baseNames, sheet1, row, fileName);
@@ -561,7 +569,7 @@ namespace Separating
                             string newstandart;
                             ExtractStandart(shortvalue, out newshortvalue, out newstandart);
                             sourceItem.Standart = newstandart;
-                            if (String.IsNullOrWhiteSpace(sourceItem.ShortItem))
+                            if (string.IsNullOrWhiteSpace(sourceItem.ShortItem))
                                 sourceItem.ShortItem = newshortvalue;
                             sourceItem.Group = subgroup.Key;
                         }
@@ -674,18 +682,25 @@ namespace Separating
 
         private void SelectGoods(string goods, string baseNames, dynamic sheet1, int row, string filename)
         {
+            var xlCellTypeLastCell = 11;
+            var lastCell = sheet1.Cells.SpecialCells(xlCellTypeLastCell);
+            //string[,] list = new string[lastCell.Column, lastCell.Row];
+            var lastCellRow = lastCell.Row;
+            var colName = IndexToAbc(lastCell.Column);
+            var arrData = (object[,])sheet1.Range[$"A1:{colName}{lastCell.Row}"].Value;
+
             // поиск раздела материалы
             var materials = false;
             while (true)
             {
-                string col1 = sheet1.Range["A" + row].Text.Trim();
+                string col1 = $"{arrData[row, 1]}"; //sheet1.Range["A" + row].Text.Trim();
                 if (col1.StartsWith("Раздел") && col1.IndexOf(goods, StringComparison.Ordinal) >= 0)
                 {
                     materials = true;
                     break;
                 }
                 row++;
-                if (row > 5000) break;
+                if (row > lastCellRow) break;
             }
             if (!materials) return;
             row++;
@@ -693,18 +708,18 @@ namespace Separating
             var basepart = "";
             while (true)
             {
-                string col1 = sheet1.Range["A" + row].Text.Trim();
+                string col1 = $"{arrData[row, 1]}"; //sheet1.Range["A" + row].Text.Trim();
                 var acols = col1.Split(new [] {'\n'});
                 int npp;
                 if (int.TryParse(acols[0].Trim(), out npp))
                 {
                     var customer = acols.Length > 1 && acols[1] == "*";
-                    string obosnovanie = sheet1.Range["B" + row].Text.Trim();
+                    string obosnovanie = $"{arrData[row, 2]}"; //sheet1.Range["B" + row].Text.Trim();
                     if (obosnovanie.Length > 0 && Char.IsDigit(obosnovanie[0])) goto lbl2;
-                    string rawDesc = sheet1.Range["C" + row].Text.Trim();
-                    string eu = sheet1.Range["D" + row].Text.Trim();
+                    string rawDesc = $"{arrData[row, 3]}"; //sheet1.Range["C" + row].Text.Trim();
+                    string eu = $"{arrData[row, 4]}"; //sheet1.Range["D" + row].Text.Trim();
                     if (eu == "шт") eu += ".";
-                    string count = sheet1.Range["E" + row].Text.Trim();
+                    string count = $"{arrData[row, 5]}"; //sheet1.Range["E" + row].Text.Trim();
                     var desc = rawDesc.Split(new[] {'\n'})[0].Trim();
                     var document = part.Length > 0 ? basepart + part : baseNames;
                     var category = "";
@@ -1149,16 +1164,16 @@ namespace Separating
                     range1.Select();
                     sheet.Range("B23").Activate();
                     range1.Copy();
-                    sheet.Rows(String.Format("{0}:{0}", row)).Select();
-                    sheet.Range(String.Format("B{0}", row)).Activate();
+                    sheet.Rows(string.Format("{0}:{0}", row)).Select();
+                    sheet.Range(string.Format("B{0}", row)).Activate();
                     sheet.Paste();
 
                     var range2 = sheet.Rows("22:22");
                     range2.Select();
                     sheet.Range("B22").Activate();
                     range2.Copy();
-                    sheet.Rows(String.Format("{0}:{0}", row - 1)).Select();
-                    sheet.Range(String.Format("B{0}", row - 1)).Activate();
+                    sheet.Rows(string.Format("{0}:{0}", row - 1)).Select();
+                    sheet.Range(string.Format("B{0}", row - 1)).Activate();
                     sheet.Paste();
                     sheet.Cells[row - 1, AbcToIndex("B")] = categoryNode.Text;
                     foreach (var groupNode in categoryNode.Nodes.Cast<TreeNode>())
@@ -1179,7 +1194,8 @@ namespace Separating
                             sheet.Cells[row, AbcToIndex("D")] = shortItem;
                             sheet.Cells[row, AbcToIndex("E")] = standart;
                             sheet.Cells[row, AbcToIndex("F")] = eu;
-                            sheet.Cells[row, dict[document]] = numbers;
+                            if (dict.ContainsKey(document))
+                                sheet.Cells[row, dict[document]] = numbers;
                             if (customer == "True")
                                 sheet.Cells[row, AbcToIndex("AB")] = numbers;
                             else
@@ -1219,7 +1235,8 @@ namespace Separating
                                     sheet.Cells[row, AbcToIndex("C")] = "      " + shortItem;
                                     sheet.Cells[row, AbcToIndex("E")] = standart;
                                     sheet.Cells[row, AbcToIndex("F")] = eu;
-                                    sheet.Cells[row, dict[document]] = numbers;
+                                    if (dict.ContainsKey(document))
+                                        sheet.Cells[row, dict[document]] = numbers;
                                     if (customer == "True")
                                         sheet.Cells[row, AbcToIndex("AB")] = numbers;
                                     else
@@ -1238,7 +1255,7 @@ namespace Separating
                             }
                         }
                     }
-                    row = row + 2;
+                    row += 2;
                 }
  
                 var range = sheet.Rows("22:23");
@@ -1297,7 +1314,8 @@ namespace Separating
                         allNumbers += num;
                         sheet.Cells[row, AbcToIndex("E")] = standart;
                         sheet.Cells[row, AbcToIndex("F")] = eu;
-                        sheet.Cells[row, dict[document]] = allNumbers.ToString(CultureInfo.GetCultureInfo("en-US"));
+                        if (dict.ContainsKey(document))
+                            sheet.Cells[row, dict[document]] = allNumbers.ToString(CultureInfo.GetCultureInfo("en-US"));
                         sheet.Cells[row, AbcToIndex("AB")] = custNumbers > 0
                                                                  ? custNumbers.ToString(CultureInfo.GetCultureInfo("en-US"))
                                                                  : "";
@@ -1330,6 +1348,23 @@ namespace Separating
                 s.IndexOf(abc.Substring(1, 1), StringComparison.Ordinal) >= 0)
                 return AbcToIndex(abc.Substring(0, 1)) * 26 + AbcToIndex(abc.Substring(1, 1));
             return 1;
+        }
+
+        private static string IndexToAbc(int index)
+        {
+            const string s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+            var letters = s.ToCharArray();
+            var result = $"{letters[index - 1]}";
+            if (index <= letters.Length)
+                return result;
+            while (true)
+            {
+                var big = (index - 1) % 26;
+                result = $"{big}{result}";
+                index = (index - 1) / 26;
+                if (index <= letters.Length)
+                    return result;
+            }
         }
 
         private void lvSourceTables_ItemChecked(object sender, ItemCheckedEventArgs e)
@@ -1472,6 +1507,7 @@ namespace Separating
         //}
 
         #endregion
+
     }
 
     #region Вспомогательные классы
