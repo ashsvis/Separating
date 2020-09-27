@@ -1117,7 +1117,7 @@ namespace Separating
         private void ExportToTable()
         {
             var path = Application.StartupPath;
-            var templateName = Path.Combine(path, "Разделительная ведомость оборудования и материалов.xltx");
+            var templateName = Path.Combine(path, "Разделительная ведомость оборудования и материалов52.xltx");
             var outputName = Path.ChangeExtension(Path.Combine(path, templateName), ".xlsx");
             if (File.Exists(outputName))
             {
@@ -1141,14 +1141,30 @@ namespace Separating
                 Cursor = Cursors.WaitCursor;
                 var wb = xl.Workbooks.Open(templateName, 0, true);
                 var sheet = wb.Sheets[1];
-                var addrs = new[] {"B13","B14","B15","B16","B17","D13","D14","D15","D16","D17","G13","G14","G15","G16","G17","K13","K14","K15","K16","K17","N13"};
+                var addrs = new[] 
+                {
+                    "B13","B14","B15","B16","B17",
+                    "D13","D14","D15","D16","D17",
+                    "G13","G14","G15","G16","G17",
+                    "K13","K14","K15","K16","K17",
+                    "N13","N14","N15","N16","N17",
+                    "R13","R14","R15","R16","R17",
+                    "V13","V14","V15","V16","V17",
+                    "Z13","Z14","Z15","Z16","Z17",
+                    "AD13","AD14","AD15","AD16","AD17",
+                    "AH13","AH14","AH15","AH16","AH17",
+                    "AL13","AL14"
+                };
                 var dict = new Dictionary<string, int>();
                 var n = 0;
                 var ncolStart = AbcToIndex("G");
                 foreach (var document in _sourceItems.GroupBy(item => item.Document).OrderBy(item => item.Key))
                 {
-                    var ncol = AbcToIndex(addrs[n][0].ToString(CultureInfo.GetCultureInfo("en-US")));
-                    var nrow = int.Parse(addrs[n].Substring(1));
+                    var item = addrs[n];
+                    var colName = item.Length == 3 ? item.Substring(0, 1) : item.Substring(0, 2);
+                    var rowName = item.Length == 3 ? item.Substring(1) : item.Substring(2);
+                    var ncol = AbcToIndex(colName);
+                    var nrow = int.Parse(rowName);
                     sheet.Cells[nrow, ncol] = document.Key;
                     dict.Add(document.Key, ncolStart);
                     ncolStart++;
@@ -1197,9 +1213,9 @@ namespace Separating
                             if (dict.ContainsKey(document))
                                 sheet.Cells[row, dict[document]] = numbers;
                             if (customer == "True")
-                                sheet.Cells[row, AbcToIndex("AB")] = numbers;
+                                sheet.Cells[row, AbcToIndex("BG")] = numbers; // AB
                             else
-                                sheet.Cells[row, AbcToIndex("AC")] = numbers;
+                                sheet.Cells[row, AbcToIndex("BH")] = numbers; // AC
                             PasteBlankRow(sheet, row);
                             row++;
                         }
@@ -1238,9 +1254,9 @@ namespace Separating
                                     if (dict.ContainsKey(document))
                                         sheet.Cells[row, dict[document]] = numbers;
                                     if (customer == "True")
-                                        sheet.Cells[row, AbcToIndex("AB")] = numbers;
+                                        sheet.Cells[row, AbcToIndex("BG")] = numbers;   //AB
                                     else
-                                        sheet.Cells[row, AbcToIndex("AC")] = numbers;
+                                        sheet.Cells[row, AbcToIndex("BH")] = numbers;   //AC
                                     PasteBlankRow(sheet, row);
                                     row++;
                                 }
