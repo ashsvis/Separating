@@ -7,14 +7,12 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
-using System.Text;
 using System.Windows.Forms;
 
 namespace Separating
 {
     public partial class SeparatingForm : Form
     {
-        //private readonly Dictionary<string, ListViewGroup> _groups; 
         private readonly Dictionary<string, StringCollection> _categories;
         private List<SourceItem> _sourceItems;
         private readonly StringCollection _extractCategories;
@@ -25,7 +23,6 @@ namespace Separating
         public SeparatingForm()
         {
             InitializeComponent();
-            //_groups = new Dictionary<string, ListViewGroup>();
             _sourceItems = new List<SourceItem>();
             _categories = new Dictionary<string, StringCollection>
                 {
@@ -309,10 +306,22 @@ namespace Separating
                             if (count >= 3)
                             {
                                 var sheet2 = wb1.Sheets[2];
-                                string baseNames = sheet2.Range["H" + 2].Text.Trim();
+
+                                var xlCellTypeLastCell = 11;
+                                var lastCell = sheet2.Cells.SpecialCells(xlCellTypeLastCell);
+                                var lastCellRow = lastCell.Row;
+                                var colName = IndexToAbc(lastCell.Column);
+                                var arrData = (object[,])sheet2.Range[$"A1:{colName}{lastCell.Row}"].Value;
+
+                                string baseNames = $"{arrData[2, AbcToIndex("H")]}"; //sheet2.Range["H" + 2].Text.Trim();
                                 Console.WriteLine(baseNames);
+
                                 var sheet3 = wb1.Sheets[3];
-                                string colB1 = sheet3.Range["B" + 1].Text.Trim();
+                                lastCell = sheet3.Cells.SpecialCells(xlCellTypeLastCell);
+                                lastCellRow = lastCell.Row;
+                                colName = IndexToAbc(lastCell.Column);
+                                arrData = (object[,])sheet3.Range[$"A1:{colName}{lastCell.Row}"].Value;
+                                string colB1 = $"{arrData[1, 2]}"; //sheet3.Range["B" + 1].Text.Trim();
                                 if (colB1 == "Наименование и техническая характеристика")
                                 {
                                     var row = 2;
@@ -320,11 +329,11 @@ namespace Separating
                                     var category = "";
                                     while (true)
                                     {
-                                        string colA = sheet3.Range["A" + row].Text.Trim();
-                                        string colB = sheet3.Range["B" + row].Text.Trim();
-                                        string colC = sheet3.Range["C" + row].Text.Trim();
-                                        string colF = sheet3.Range["F" + row].Text.Trim();
-                                        string colG = sheet3.Range["G" + row].Text.Trim();
+                                        string colA = $"{arrData[row, 1]}"; //sheet3.Range["A" + row].Text.Trim();
+                                        string colB = $"{arrData[row, 2]}"; //sheet3.Range["B" + row].Text.Trim();
+                                        string colC = $"{arrData[row, 3]}"; //sheet3.Range["C" + row].Text.Trim();
+                                        string colF = $"{arrData[row, 6]}"; //sheet3.Range["F" + row].Text.Trim();
+                                        string colG = $"{arrData[row, 7]}"; //sheet3.Range["G" + row].Text.Trim();
                                         if ((customer == null || !(bool)customer) && colB.EndsWith("заказчиком"))
                                         {
                                             customer = true;
@@ -336,9 +345,9 @@ namespace Separating
                                             continue;
                                         }
                                         if (customer != null &&
-                                            !String.IsNullOrWhiteSpace(colA) && !String.IsNullOrWhiteSpace(colB) &&
-                                            !String.IsNullOrWhiteSpace(colC) && !String.IsNullOrWhiteSpace(colF) &&
-                                            !String.IsNullOrWhiteSpace(colG))
+                                            !string.IsNullOrWhiteSpace(colA) && !string.IsNullOrWhiteSpace(colB) &&
+                                            !string.IsNullOrWhiteSpace(colC) && !string.IsNullOrWhiteSpace(colF) &&
+                                            !string.IsNullOrWhiteSpace(colG))
                                         {
                                             var desc = (colB + " " + colC).Trim();
                                             foreach (var sc1 in _categories)
@@ -391,7 +400,7 @@ namespace Separating
                                             }                                          
                                         }
                                         row++;
-                                        if (row > 500) break;
+                                        if (row > lastCellRow) break;
                                     }
                                 }
                             }
@@ -596,15 +605,15 @@ namespace Separating
             newstandart = "";
             var ashsort = shortvalue.Split(new[] {' '});
             if (!ashsort.Any(item =>
-                             (String.Equals(item, "ГОСТ") || String.Equals(item, "ОСТ") ||
-                              String.Equals(item, "ТУ")))) return;
+                             (string.Equals(item, "ГОСТ") || string.Equals(item, "ОСТ") ||
+                              string.Equals(item, "ТУ")))) return;
             var list = new List<string>();
             var standart = new List<string>();
             var flag = 0;
             foreach (var item in ashsort)
             {
-                if (String.Equals(item, "ГОСТ") || String.Equals(item, "ОСТ") ||
-                    String.Equals(item, "ТУ"))
+                if (string.Equals(item, "ГОСТ") || String.Equals(item, "ОСТ") ||
+                    string.Equals(item, "ТУ"))
                 {
                     standart.Add(item.Trim());
                     flag = 1;
@@ -624,8 +633,8 @@ namespace Separating
                     }
                 }
             }
-            newshortvalue = String.Join(" ", list);
-            newstandart = String.Join(" ", standart);
+            newshortvalue = string.Join(" ", list);
+            newstandart = string.Join(" ", standart);
         }
 
         private void FillList()
@@ -649,9 +658,6 @@ namespace Separating
                             si.Category.StartsWith("яПрочие материалы") ? si.Category.Substring(1) : si.Category, 
                             si.Group, si.ShortItem, si.Standart
                         });
-                    //var filename = si.FileName;
-                    //var @group = ListViewGroup(filename, filename);
-                    //goodItem.Group = @group;
                     lvGoods.Items.Add(goodItem);
                 }
             }
@@ -668,16 +674,16 @@ namespace Separating
         private static string Extract(string value)
         {
             var aitems = value.Split(new[] {' '});
-            var buff = new List<String>();
+            var buff = new List<string>();
             var n = 0;
             foreach (var aitem in aitems)
             {
-                if (String.IsNullOrWhiteSpace(aitem)) continue;
-                if (n > 0 && !Char.IsLower(aitem.Trim(), 0)) break;
+                if (string.IsNullOrWhiteSpace(aitem)) continue;
+                if (n > 0 && !char.IsLower(aitem.Trim(), 0)) break;
                 buff.Add(aitem.Trim());
                 n++;
             }
-            return String.Join(" ", buff);
+            return string.Join(" ", buff);
         }
 
         private void SelectGoods(string goods, string baseNames, dynamic sheet1, int row, string filename)
@@ -715,7 +721,7 @@ namespace Separating
                 {
                     var customer = acols.Length > 1 && acols[1] == "*";
                     string obosnovanie = $"{arrData[row, 2]}"; //sheet1.Range["B" + row].Text.Trim();
-                    if (obosnovanie.Length > 0 && Char.IsDigit(obosnovanie[0])) goto lbl2;
+                    if (obosnovanie.Length > 0 && char.IsDigit(obosnovanie[0])) goto lbl2;
                     string rawDesc = $"{arrData[row, 3]}"; //sheet1.Range["C" + row].Text.Trim();
                     string eu = $"{arrData[row, 4]}"; //sheet1.Range["D" + row].Text.Trim();
                     if (eu == "шт") eu += ".";
@@ -780,7 +786,7 @@ namespace Separating
                 }
             lbl2:
                 row++;
-                if (row > 5000) break;
+                if (row > lastCellRow) break;
             }
         }
 
@@ -1141,6 +1147,10 @@ namespace Separating
                 Cursor = Cursors.WaitCursor;
                 var wb = xl.Workbooks.Open(templateName, 0, true);
                 var sheet = wb.Sheets[1];
+
+                var lastCellRow = CalcRows(); //lastCell.Row;
+                var arrData = (object[,])sheet.Range[$"A1:BK{lastCellRow}"].Value;
+
                 var addrs = new[] 
                 {
                     "B13","B14","B15","B16","B17",
@@ -1165,8 +1175,8 @@ namespace Separating
                     var rowName = item.Length == 3 ? item.Substring(1) : item.Substring(2);
                     var ncol = AbcToIndex(colName);
                     var nrow = int.Parse(rowName);
-                    sheet.Cells[nrow, ncol] = document.Key;
-                    sheet.Cells[19, ncolStart] = document.Key;
+                    arrData[nrow, ncol] = document.Key; //sheet.Cells[nrow, ncol] = document.Key;
+                    arrData[19, ncolStart] = document.Key; //sheet.Cells[19, ncolStart] = document.Key;
                     dict.Add(document.Key, ncolStart);
                     ncolStart++;
                     n++;
@@ -1174,28 +1184,31 @@ namespace Separating
                 }
                 var row = 25;
                 var npp = 1;
+                TreeNode lastItemNode = null;
+                var list = new List<int>();
                 foreach (var categoryNode in tvResults.Nodes.Cast<TreeNode>())
                 {
-                    tvResults.SelectedNode = categoryNode;
-                    var range1 = sheet.Rows("23:24");
-                    range1.Select();
-                    sheet.Range("B23").Activate();
-                    range1.Copy();
-                    sheet.Rows(string.Format("{0}:{0}", row)).Select();
-                    sheet.Range(string.Format("B{0}", row)).Activate();
-                    sheet.Paste();
+                    //tvResults.SelectedNode = categoryNode;
+                    //var range1 = sheet.Rows("23:24");
+                    //range1.Select();
+                    //sheet.Range("B23").Activate();
+                    //range1.Copy();
+                    //sheet.Rows(string.Format("{0}:{0}", row)).Select();
+                    //sheet.Range(string.Format("B{0}", row)).Activate();
+                    //sheet.Paste();
 
-                    var range2 = sheet.Rows("22:22");
-                    range2.Select();
-                    sheet.Range("B22").Activate();
-                    range2.Copy();
-                    sheet.Rows(string.Format("{0}:{0}", row - 1)).Select();
-                    sheet.Range(string.Format("B{0}", row - 1)).Activate();
-                    sheet.Paste();
-                    sheet.Cells[row - 1, AbcToIndex("B")] = categoryNode.Text;
+                    //var range2 = sheet.Rows("22:22");
+                    //range2.Select();
+                    //sheet.Range("B22").Activate();
+                    //range2.Copy();
+                    //sheet.Rows(string.Format("{0}:{0}", row - 1)).Select();
+                    //sheet.Range(string.Format("B{0}", row - 1)).Activate();
+                    //sheet.Paste();
+                    arrData[row - 1, 2] = categoryNode.Text; //sheet.Cells[row - 1, 2] = categoryNode.Text;
+                    list.Add(row - 1);
                     foreach (var groupNode in categoryNode.Nodes.Cast<TreeNode>())
                     {
-                        tvResults.SelectedNode = groupNode;
+                        //tvResults.SelectedNode = groupNode;
                         var avals = groupNode.Text.Trim().Split(new[] {'|'});
                         if (avals.Length == 7)
                         {
@@ -1206,39 +1219,41 @@ namespace Separating
                             var standart = avals[4].Trim();
                             var eu = avals[5].Trim();
                             var numbers = avals[6].Trim();
-                            sheet.Cells[row, AbcToIndex("B")] = (npp++).ToString("0");
-                            sheet.Cells[row, AbcToIndex("C")] = groupName;
-                            sheet.Cells[row, AbcToIndex("D")] = shortItem;
-                            sheet.Cells[row, AbcToIndex("E")] = standart;
-                            sheet.Cells[row, AbcToIndex("F")] = eu;
+                            arrData[row, 2] = (npp++).ToString("0"); //sheet.Cells[row, 2] = (npp++).ToString("0");
+                            arrData[row, 3] = groupName; //sheet.Cells[row, 3] = groupName;
+                            arrData[row, 4] = shortItem; //sheet.Cells[row, 4] = shortItem;
+                            arrData[row, 5] = standart; //sheet.Cells[row, 5] = standart;
+                            arrData[row, 6] = eu; //sheet.Cells[row, 6] = eu;
                             if (dict.ContainsKey(document))
-                                sheet.Cells[row, dict[document]] = numbers;
+                                arrData[row, dict[document]] = numbers; //sheet.Cells[row, dict[document]] = numbers;
                             if (customer == "True")
-                                sheet.Cells[row, AbcToIndex("BG")] = numbers; // AB
+                                arrData[row, AbcToIndex("BG")] = numbers; //sheet.Cells[row, AbcToIndex("BG")] = numbers; // AB
                             else
-                                sheet.Cells[row, AbcToIndex("BH")] = numbers; // AC
-                            PasteBlankRow(sheet, row);
+                                arrData[row, AbcToIndex("BH")] = numbers; //sheet.Cells[row, AbcToIndex("BH")] = numbers; // AC
+                            //PasteBlankRow(sheet, row);
                             row++;
                         }
                         else if (avals.Length == 2)
                         {
                             var groupName = avals[0].Trim();
                             var shortItem = avals[1].Trim();
-                            sheet.Cells[row, AbcToIndex("B")] = (npp++).ToString("0");
-                            sheet.Cells[row, AbcToIndex("C")] = groupName;
-                            sheet.Cells[row, AbcToIndex("D")] = shortItem;
-                            FillRow(sheet, row, groupNode, dict);
-                            PasteBlankRow(sheet, row);
+                            arrData[row, 2] = (npp++).ToString("0"); //sheet.Cells[row, AbcToIndex("B")] = (npp++).ToString("0");
+                            arrData[row, 3] = groupName; //sheet.Cells[row, AbcToIndex("C")] = groupName;
+                            arrData[row, 4] = shortItem; //sheet.Cells[row, AbcToIndex("D")] = shortItem;
+                            FillRow(arrData /*sheet*/, row, groupNode, dict);
+                            //PasteBlankRow(sheet, row);
                             row++;                                             
                         }
                         else
                         {
-                            sheet.Cells[row, AbcToIndex("C")] = groupNode.Text.Trim();
-                            PasteBlankRow(sheet, row);
+                            list.Add(row);
+                            arrData[row, 3] = groupNode.Text.Trim(); //sheet.Cells[row, AbcToIndex("C")] = groupNode.Text.Trim();
+                            //PasteBlankRow(sheet, row);
                             row++;
                             foreach (var itemNode in groupNode.Nodes.Cast<TreeNode>())
                             {
-                                tvResults.SelectedNode = itemNode;
+                                //tvResults.SelectedNode = itemNode;
+                                lastItemNode = itemNode;
                                 var aitemvals = itemNode.Text.Trim().Split(new[] { '|' });
                                 if (aitemvals.Length == 6)
                                 {
@@ -1248,25 +1263,25 @@ namespace Separating
                                     var standart = aitemvals[3].Trim();
                                     var eu = aitemvals[4].Trim();
                                     var numbers = aitemvals[5].Trim();
-                                    sheet.Cells[row, AbcToIndex("B")] = (npp++).ToString("0");
-                                    sheet.Cells[row, AbcToIndex("C")] = "      " + shortItem;
-                                    sheet.Cells[row, AbcToIndex("E")] = standart;
-                                    sheet.Cells[row, AbcToIndex("F")] = eu;
+                                    arrData[row, 2] = (npp++).ToString("0"); //sheet.Cells[row, AbcToIndex("B")] = (npp++).ToString("0");
+                                    arrData[row, 3] = "      " + shortItem; //sheet.Cells[row, AbcToIndex("C")] = "      " + shortItem;
+                                    arrData[row, 5] = standart; //sheet.Cells[row, AbcToIndex("E")] = standart;
+                                    arrData[row, 6] = eu; //sheet.Cells[row, AbcToIndex("F")] = eu;
                                     if (dict.ContainsKey(document))
-                                        sheet.Cells[row, dict[document]] = numbers;
+                                        arrData[row, dict[document]] = numbers; //sheet.Cells[row, dict[document]] = numbers;
                                     if (customer == "True")
-                                        sheet.Cells[row, AbcToIndex("BG")] = numbers;   //AB
+                                        arrData[row, AbcToIndex("BG")] = numbers; //sheet.Cells[row, AbcToIndex("BG")] = numbers;   //AB
                                     else
-                                        sheet.Cells[row, AbcToIndex("BH")] = numbers;   //AC
-                                    PasteBlankRow(sheet, row);
+                                        arrData[row, AbcToIndex("BH")] = numbers; //sheet.Cells[row, AbcToIndex("BH")] = numbers;   //AC
+                                    //PasteBlankRow(sheet, row);
                                     row++;
                                 }
                                 else
                                 {
-                                    sheet.Cells[row, AbcToIndex("B")] = (npp++).ToString("0");
-                                    sheet.Cells[row, AbcToIndex("C")] = "      " + itemNode.Text.Trim();
-                                    FillRow(sheet, row, itemNode, dict);
-                                    PasteBlankRow(sheet, row);
+                                    arrData[row, 2] = (npp++).ToString("0"); //sheet.Cells[row, AbcToIndex("B")] = (npp++).ToString("0");
+                                    arrData[row, 3] = "      " + itemNode.Text.Trim(); //sheet.Cells[row, AbcToIndex("C")] = "      " + itemNode.Text.Trim();
+                                    FillRow(arrData /*sheet*/, row, itemNode, dict);
+                                    //PasteBlankRow(sheet, row);
                                     row++;                    
                                 }
                             }
@@ -1274,12 +1289,39 @@ namespace Separating
                     }
                     row += 2;
                 }
- 
+                tvResults.SelectedNode = lastItemNode;
+                // копирование данных
+                sheet.Range[$"A1:BK{lastCellRow}"].Value = arrData;
+                // копирование форматов
+                var range1 = sheet.Range["23:23"];  // строка с индексом по порядку
+                range1.Select();
+                range1.Copy();
+                var range2 = sheet.Range[$"25:{lastCellRow}"];
+                range2.Select();
+                // вставка форматов
+                var xlPasteFormats = -4122;
+                var xlPasteSpecialOperationNone = -4142;
+                range2.PasteSpecial(xlPasteFormats, xlPasteSpecialOperationNone, false, false);
+                // копирование форматов заголовков
+                range1 = sheet.Range["22:22"];  // строка с индексом по порядку
+                range1.Select();
+                range1.Copy();
+                xlPasteFormats = -4122;
+                xlPasteSpecialOperationNone = -4142;
+                foreach (var rowIndex in list)
+                {
+                    range2 = sheet.Range[$"{rowIndex}:{rowIndex}"];
+                    range2.Select();
+                    // вставка форматов
+                    range2.PasteSpecial(xlPasteFormats, xlPasteSpecialOperationNone, false, false);
+                }
+
+                // удаление служебных строк
                 var range = sheet.Rows("22:23");
                 range.Select();
                 sheet.Range("B22").Activate();
                 range.Delete();
-
+                // сохранение
                 wb.SaveAs(outputName);
                 wb.Close();
             }
@@ -1294,19 +1336,43 @@ namespace Separating
             }
         }
 
+        private int CalcRows()
+        {
+            var row = 1;
+            foreach (var categoryNode in tvResults.Nodes.Cast<TreeNode>())
+            {
+                foreach (var groupNode in categoryNode.Nodes.Cast<TreeNode>())
+                {
+                    var avals = groupNode.Text.Trim().Split(new[] { '|' });
+                    if (avals.Length == 7)
+                        row++;
+                    else if (avals.Length == 2)
+                        row++;
+                    else
+                    {
+                        row++;
+                        foreach (var itemNode in groupNode.Nodes.Cast<TreeNode>())
+                            row++;
+                    }
+                }
+                row += 2;
+            }
+            return row + 30;
+        }
+
         private static string Normalize(string value)
         {
             var avals = value.Split(new [] { " " }, StringSplitOptions.RemoveEmptyEntries);
             return String.Join(" ", avals);
         }
 
-        private void FillRow(dynamic sheet, int row, TreeNode itemNode, IDictionary<string, int> dict)
+        private void FillRow(object[,] arrData /*dynamic sheet*/, int row, TreeNode itemNode, IDictionary<string, int> dict)
         {
             double allNumbers = 0, custNumbers = 0, workNumbers = 0;
             var lastdoc = "";
             foreach (var subitemNode in itemNode.Nodes.Cast<TreeNode>())
             {
-                tvResults.SelectedNode = subitemNode;
+                //tvResults.SelectedNode = subitemNode;
                 var asubitemvals = subitemNode.Text.Trim().Split(new[] {'|'});
                 if (asubitemvals.Length == 5)
                 {
@@ -1329,31 +1395,35 @@ namespace Separating
                             allNumbers = 0;
                         }
                         allNumbers += num;
-                        sheet.Cells[row, AbcToIndex("E")] = standart;
-                        sheet.Cells[row, AbcToIndex("F")] = eu;
+                        arrData[row, 5] = standart; //sheet.Cells[row, AbcToIndex("E")] = standart;
+                        arrData[row, 6] = eu; //sheet.Cells[row, AbcToIndex("F")] = eu;
                         if (dict.ContainsKey(document))
-                            sheet.Cells[row, dict[document]] = allNumbers.ToString(CultureInfo.GetCultureInfo("en-US"));
-                        sheet.Cells[row, AbcToIndex("BG")] = custNumbers > 0
+                            arrData[row, dict[document]] = allNumbers.ToString(CultureInfo.GetCultureInfo("en-US")); //sheet.Cells[row, dict[document]] = allNumbers.ToString(CultureInfo.GetCultureInfo("en-US"));
+                        arrData[row, AbcToIndex("BG")] = custNumbers > 0
                                                                  ? custNumbers.ToString(CultureInfo.GetCultureInfo("en-US"))
-                                                                 : "";
-                        sheet.Cells[row, AbcToIndex("BH")] = workNumbers > 0
+                                                                 : ""; //sheet.Cells[row, AbcToIndex("BG")] = custNumbers > 0
+                                                                 //? custNumbers.ToString(CultureInfo.GetCultureInfo("en-US"))
+                                                                 //: "";
+                        arrData[row, AbcToIndex("BH")] = workNumbers > 0
                                                                  ? workNumbers.ToString(CultureInfo.GetCultureInfo("en-US"))
-                                                                 : "";
+                                                                 : ""; //sheet.Cells[row, AbcToIndex("BH")] = workNumbers > 0
+                                                                 //? workNumbers.ToString(CultureInfo.GetCultureInfo("en-US"))
+                                                                 //: "";
                     }
                 }
             }
         }
 
-        private static void PasteBlankRow(dynamic sheet, int row)
-        {
-            var range = sheet.Rows("23:23");
-            range.Select();
-            sheet.Range("B23").Activate();
-            range.Copy();
-            sheet.Rows(String.Format("{0}:{0}", row + 1)).Select();
-            sheet.Range(String.Format("B{0}", row + 1)).Activate();
-            sheet.Paste();
-        }
+        //private static void PasteBlankRow(dynamic sheet, int row)
+        //{
+        //    var range = sheet.Rows("23:23");
+        //    range.Select();
+        //    sheet.Range("B23").Activate();
+        //    range.Copy();
+        //    sheet.Rows(String.Format("{0}:{0}", row + 1)).Select();
+        //    sheet.Range(String.Format("B{0}", row + 1)).Activate();
+        //    sheet.Paste();
+        //}
 
         private static int AbcToIndex(string abc)
         {
@@ -1371,13 +1441,16 @@ namespace Separating
         {
             const string s = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
             var letters = s.ToCharArray();
-            var result = $"{letters[index - 1]}";
+            var result = "";
             if (index <= letters.Length)
+            {
+                result = $"{letters[index - 1]}";
                 return result;
+            }
             while (true)
             {
                 var big = (index - 1) % 26;
-                result = $"{big}{result}";
+                result = $"{letters[big]}{result}";
                 index = (index - 1) / 26;
                 if (index <= letters.Length)
                     return result;
