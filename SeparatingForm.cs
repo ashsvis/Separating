@@ -313,7 +313,7 @@ namespace Separating
                                 var colName = IndexToAbc(lastCell.Column);
                                 var arrData = (object[,])sheet2.Range[$"A1:{colName}{lastCell.Row}"].Value;
 
-                                string baseNames = $"{arrData[2, AbcToIndex("H")]}"; //sheet2.Range["H" + 2].Text.Trim();
+                                string baseNames = $"{arrData[2, 7]}"; //sheet2.Range["H" + 2].Text.Trim();
                                 Console.WriteLine(baseNames);
 
                                 var sheet3 = wb1.Sheets[3];
@@ -726,7 +726,7 @@ namespace Separating
                     string eu = $"{arrData[row, 4]}"; //sheet1.Range["D" + row].Text.Trim();
                     if (eu == "шт") eu += ".";
                     string count = $"{arrData[row, 5]}"; //sheet1.Range["E" + row].Text.Trim();
-                    var desc = rawDesc.Split(new[] {'\n'})[0].Trim();
+                    var desc = string.Join("\n", rawDesc.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim())); //rawDesc.Split(new[] {'\n'})[0].Trim();
                     var document = part.Length > 0 ? basepart + part : baseNames;
                     var category = "";
                     foreach (var sc1 in _categories)
